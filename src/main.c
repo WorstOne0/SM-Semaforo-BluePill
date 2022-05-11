@@ -9,35 +9,40 @@ char red = 0;
 void SysTick_Handler (void) {
     if(wait > 0) {
         wait--;
-    } else {
-        // Desabilitar o LED Verde
+        return;
+    }  
 
-        // Habilitar o LED Amarelo
+    // Desabilitar o LED Verde
+    GPIOC->ODR |= (1<<13);
 
-        // Tempo do LED Amarelo
-        yellow = 20;
-    }
+    // Habilitar o LED Amarelo
+    GPIOC->ODR &= ~(1<<14);
 
+    // Espera o tempo do Amarelo
     if(yellow > 0) {
         yellow--;
-    } else {
-        // Desabilitar o LED Amarelo
-
-        // Habilitar o LED Vermelho
-
-        // Tempo do LED Vermelho
-        red = 30;
+        return;
     }
+    
+    // Desabilitar o LED Amarelo
+    GPIOC->ODR |= (1<<14);
 
+    // Habilitar o LED Vermelho
+    GPIOC->ODR &= ~(1<<15);
+
+    // Espera o tempo do Vermelho
     if(red > 0) {
         red--;
-    } else {
-       // Desabilitar o LED Vermelho
-
-       // Habilitar o LED Verde 
-       
-       EXTI->IMR |= EXTI_IMR_IM0; // Hab. a int. do EXTI0
+        return;
     }
+
+    // Desabilitar o LED Vermelho
+    GPIOC->ODR |= (1<<15);
+
+    // Habilitar o LED Verde
+     GPIOC->ODR &= ~(1<<13); 
+       
+    EXTI->IMR |= EXTI_IMR_IM0; // Hab. a int. do EXTI0
 }
 
 /* Tratamento da interrupção do EXTI0 */
@@ -47,6 +52,10 @@ void EXTI0_IRQHandler (void) {
 
     // Tempo para ativar LED Vmarelo
     wait = 30;
+    // Tempo do LED Amarelo
+    yellow = 20;
+    // Tempo do LED Vermelho
+    red = 30;
 }
 
 int main(void){
@@ -55,15 +64,20 @@ int main(void){
     // PC13 como saida open-drain de 2 MHz - LED Verde
     GPIOC->CRH = (GPIOC->CRH & ~(GPIO_CRH_MODE13_Msk | GPIO_CRH_CNF13_Msk)) | (0b0110 << GPIO_CRH_MODE13_Pos); 
     // PC14 como saida open-drain de 2 MHz - LED Amarelo
-
+    GPIOC->CRH = (GPIOC->CRH & ~(GPIO_CRH_MODE14_Msk | GPIO_CRH_CNF14_Msk)) | (0b0110 << GPIO_CRH_MODE14_Pos); 
     // PC15 como saida open-drain de 2 MHz - LED Vermelho
-
+    GPIOC->CRH = (GPIOC->CRH & ~(GPIO_CRH_MODE15_Msk | GPIO_CRH_CNF15_Msk)) | (0b0110 << GPIO_CRH_MODE15_Pos); 
+    
     // PA0 como entrada... 
     GPIOA->CRL = (GPIOA->CRL & ~(GPIO_CRL_MODE0_Msk | GPIO_CRL_CNF0_Msk)) | (0b1000 << GPIO_CRL_MODE0_Pos);
     GPIOA->ODR |= GPIO_ODR_ODR0;    // ... e com resistor pull-up interno
 
     // Habilitar LED Verde???
-    GPIOC->ODR ^= (1<<13);
+    GPIOC->ODR &= ~(1<<13);
+    // Desabilitar LED Amarelo
+    GPIOC->ODR |= (1<<14);
+    // Desabilitar LED Vermelho
+    GPIOC->ODR |= (1<<15);
 
     /* Config. SysTick com interrupção a cada 1OO ms ->  10 Hz */     
     SysTick->LOAD = 800000;     // (default BluePill: HSI com 8MHz)
